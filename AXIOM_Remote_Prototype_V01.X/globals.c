@@ -37,3 +37,5 @@ uint16_t cursor_x = 0;
 uint16_t cursor_y = 0;
 
 uint8_t menu_offset = 0;
+uint8_t parameter_menu_active;
+

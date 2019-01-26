@@ -27,20 +27,17 @@
 #define pgm_read_dword(addr) (*(const unsigned long *)(addr))
 #define pgm_read_pointer(addr) ((void *)pgm_read_dword(addr))
 
-typedef enum menu_id_t 
-{
+typedef enum menu_id_t {
     MENU_NONE, MENU_MAIN, MENU_SUBMENU1, MENU_SUBMENU2
 } menu_id_t;
 extern enum menu_id_t current_menu;
 
-typedef enum page_id_t 
-{
+typedef enum page_id_t {
     PAGE_NONE, PAGE_HOME, PAGE_WB, PAGE_WB_HELP
 } page_id_t;
 extern enum page_id_t current_page;
 
-typedef enum 
-{
+typedef enum {
     TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER, TEXT_ALIGN_RIGHT
 } text_align;
 
@@ -89,10 +86,9 @@ typedef struct {
     wb_option_t white_balance_options[16];
     uint8_t white_balance_options_count;
     uint8_t white_balance_selection_index;
-} white_balance;
+} white_balance_t;
 
-white_balance white_balance_parameter;
-
+white_balance_t white_balance_parameter;
 
 extern bool btn_E1_pressed;
 
@@ -118,8 +114,8 @@ enum transition_animation transition_animation_type;
 
 extern uint8_t menu_offset; // when scrolling the menu this is the offset for the items
 
-extern uint8_t parameter_menu_active; // is a parameter menu currently visible (0 = no)
-extern uint8_t parameter_selection_index; // index of the item currently selected in a parameter menu
+uint8_t parameter_menu_active; // is a parameter menu currently visible (0 = no)
+uint8_t parameter_selection_index; // index of the item currently selected in a parameter menu
 
 typedef struct {
     char label[32];
@@ -154,9 +150,9 @@ typedef struct {
     uint8_t menu_selection_index;
 } menu_t;
 
-extern uint8_t main_menu_count;
+uint8_t main_menu_count;
 
-extern page_t main_page[3];
+page_t main_page[3];
 
 uint8_t page_count;
 

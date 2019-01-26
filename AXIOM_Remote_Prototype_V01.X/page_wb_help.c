@@ -42,13 +42,14 @@ void draw_wb_help_scroll_indicator(uint8_t line, uint8_t total_lines) {
     uint8_t scrollbaroffset = ((total_lines - line) - menu_offset) * ((srollbar_max_height - scrollbarheight) / (total_lines - line));
 
     //Background
-    fill_rect(FRAMEBUFFER_WIDTH - 16, 0, 16, FRAMEBUFFER_HEIGHT - 30,help_page_background_color);
+    fill_rect(FRAMEBUFFER_WIDTH - 16, 0, 16, FRAMEBUFFER_HEIGHT - 30, help_page_background_color);
 
     //Thin Line
-    fill_rect(FRAMEBUFFER_WIDTH - 9, 0, 4, FRAMEBUFFER_HEIGHT - 30,help_page_text_color);
+    fill_rect(FRAMEBUFFER_WIDTH - 9, 0, 4, FRAMEBUFFER_HEIGHT - 30, help_page_text_color);
 
     //Thick Line
-    fill_rect(FRAMEBUFFER_WIDTH - 13, scrollbaroffset, 12, scrollbarheight,help_page_text_color);
+    fill_rect(FRAMEBUFFER_WIDTH - 13, scrollbaroffset, 12, scrollbarheight, help_page_text_color);
+
 }
 
 void draw_wb_help_page_side_items() {
@@ -78,13 +79,13 @@ void draw_wb_help_page_side_items() {
 /**************************************************************************/
 void draw_wb_help_page() {
     //clear the screen
-    fill_rect(0, 0, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT,help_page_background_color);
+    fill_rect(0, 0, FRAMEBUFFER_WIDTH, FRAMEBUFFER_HEIGHT, help_page_background_color);
 
     //draw header background
     //fill_rect(0, FRAMEBUFFER_TOP - 28, FRAMEBUFFER_WIDTH, 28,help_page_text_color);
 
     // Draw header
-    draw_string(5, FRAMEBUFFER_HEIGHT - 30, "White Balance Help",help_page_text_color,help_page_text_color,
+    draw_string(5, FRAMEBUFFER_HEIGHT - 30, "White Balance Help", help_page_text_color, help_page_text_color,
             _FreeSans12pt7b, TEXT_ALIGN_LEFT, 0);
 
     //separation line
@@ -100,7 +101,7 @@ void draw_wb_help_page() {
     draw_rect(30 + 6, 5, FRAMEBUFFER_WIDTH - 36 - 20 - wrap_tester, 200, color565(255, 0, 0));
 
     //draw content
-    draw_string(30 + 6, FRAMEBUFFER_TOP - 30 - 25 +help_page_scroll_index, wb_help_text,help_page_text_color,help_page_text_color,
+    draw_string(30 + 6, FRAMEBUFFER_TOP - 30 - 25 + help_page_scroll_index, wb_help_text, help_page_text_color, help_page_text_color,
             _FreeSans9pt7b, TEXT_ALIGN_LEFT, FRAMEBUFFER_WIDTH - 36 - 20 - wrap_tester);
 
     /*uint8_t length = string_len("This is a very long text with many letters ahahaha - its so incredible  lonmg.asdasd.");
@@ -111,11 +112,11 @@ void draw_wb_help_page() {
 }
 
 void init_wb_help_page() {
-   help_page_text_color = color565(0, 0, 0);
-   help_page_background_color = color565(255, 255, 255);
+    help_page_text_color = color565(0, 0, 0);
+    help_page_background_color = color565(255, 255, 255);
 
-   help_page_padding_side = 10;
-   help_page_scroll_index = 0;
+    help_page_padding_side = 10;
+    help_page_scroll_index = 0;
 
     strcpy(wb_help_text, "Headline\nThis is a very long text with many letters - "
             "it's so incredibly long that it does not all fit into one line on the screen.");
