@@ -3,14 +3,13 @@
 #include "Painter/IPainter.h"
 #include "Screens/IScreen.h"
 
-
 MenuSystem::MenuSystem(IUSBDevice* usbDevice, CentralDB* centraldb) :
-    _currentScreen(nullptr), _usbDevice(usbDevice), _mainPage(usbDevice), _MainMenu(usbDevice, centraldb),
+    _usbDevice(usbDevice), _mainPage(usbDevice), _mainMenu(usbDevice, centraldb),
     _settingsSubMenu1(usbDevice, centraldb), _whiteBalance(usbDevice)
 {
     InitializeAvailableScreens();
 
-    SetCurrentScreen(AvailableScreens::MainPage);
+    _currentScreen = _availableScreens[(uint8_t)AvailableScreens::MainMenu];
 }
 
 MenuSystem::~MenuSystem()
@@ -31,7 +30,7 @@ AvailableScreens MenuSystem::GetCurrentScreen()
 void MenuSystem::InitializeAvailableScreens()
 {
     _availableScreens[0] = &_mainPage;
-    _availableScreens[1] = &_MainMenu;
+    _availableScreens[1] = &_mainMenu;
     _availableScreens[2] = &_settingsSubMenu1;
     _availableScreens[3] = &_whiteBalance;
 }

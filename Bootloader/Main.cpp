@@ -2,10 +2,10 @@
 //#include <xc.h>
 
 // Configuration
-#include "Configuration/PIC32.h"
+#include "Configuration/PIC32Config.h"
 
 // Firmware headers
-#include "Configuration/PIC32.h"
+#include "Configuration/PIC32Config.h"
 #include "Periphery/USB/USBCDCDevice.h"
 #include "Periphery/ICSP/ICSProgrammer.h"
 

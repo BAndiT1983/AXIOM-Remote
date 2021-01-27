@@ -29,7 +29,7 @@ class MenuSystem : public IMenuSystem
 
     // Menus, static init
     MainPage _mainPage;
-    MainMenu _MainMenu;
+    MainMenu _mainMenu;
     SettingsSubMenu1 _settingsSubMenu1;
     WhiteBalanceScreen _whiteBalance;
 

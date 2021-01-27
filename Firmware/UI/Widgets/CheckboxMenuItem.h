@@ -2,8 +2,8 @@
 #define CHECKBOXMENUITEM_H
 
 #include "MenuItem.h"
-#include "../../../Firmware/Media/Icons/checkboxfalse_icon.h"
-#include "../../../Firmware/Media/Icons/checkboxtrue_icon.h"
+#include "../../Media/Icons/checkboxfalse_icon.h"
+#include "../../Media/Icons/checkboxtrue_icon.h"
 
 class IPainter;
 

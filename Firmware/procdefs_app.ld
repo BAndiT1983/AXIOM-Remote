@@ -97,14 +97,12 @@ SECTIONS {
   {
   } > kseg0_program_mem
 
-
   /* Boot Sections */
   .reset _RESET_ADDR :
   {
     KEEP(*(.reset))
     KEEP(*(.reset.startup))
   } > kseg1_boot_mem
-
 }
 
 INCLUDE "../Common/procdefs_common.ld"

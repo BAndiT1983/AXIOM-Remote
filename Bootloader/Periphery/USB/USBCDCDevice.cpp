@@ -1,6 +1,7 @@
 #include "USBCDCDevice.h"
 
 #include <xc.h>
+#include <sys/attribs.h>
 
 #include "USBDefinitions.h"
 
@@ -40,8 +41,8 @@ volatile static uint8_t *ep3ptr; // EP3 Transmit Data Pointer
 //#define EP1RXBUFFSIZE 8 	// Also in multiples of 8
 //#define EP3TXBUFFSIZE 8 	// Also in multiples of 8
 
-#define BUF_SIZE 4096
-#define BUF_MASK (BUF_SIZE - 1)
+#define uart2_SIZE 4096
+#define uart2_MASK (uart2_SIZE - 1)
 
 volatile uint8_t *ep0ptr; // EP0 Transmit Data Pointer
 volatile uint8_t *ep1ptr; // EP1 Transmit Data Pointer
@@ -49,9 +50,9 @@ volatile uint8_t *ep1ptr; // EP1 Transmit Data Pointer
 volatile uint8_t ep0data[EP0TXBUFFSIZE * 8]; // USB end point 0 data - USB FIFO size
 volatile uint8_t ep1data[EP1RXBUFFSIZE * 8]; // USB end point 1 data - USB FIFO size
 
-volatile char buf[BUF_SIZE];
-volatile unsigned buf_wi = 0;
-volatile unsigned buf_ri = 0;
+volatile char buf[uart2_SIZE];
+volatile unsigned uart2_wi = 0;
+volatile unsigned uart2_ri = 0;
 
 /********************************************************************
  ** String Descriptors						   **
@@ -89,48 +90,90 @@ void loop_ch(char ch)
     loop[loop_wi++ & LOOP_MASK] = ch;
 }
 
-void buf_ch(char ch)
+/*void uart2_ch(char ch)
 {
-    buf[buf_wi++ & BUF_MASK] = ch;
+    buf[uart2_wi++ & uart2_MASK] = ch;
 }
 
-void buf_nl(void)
+void uart2_nl(void)
 {
-    buf_ch('\n');
+    uart2_ch('\n');
+}*/
+
+inline void uart2_ch(char ch)
+{
+    while (U2STAbits.UTXBF)
+    {
+    }
+
+    U2TXREG = ch;
 }
 
-void buf_hex(uint8_t hex)
+inline void uart2_str0(const char* str)
+{
+    while (*str)
+        uart2_ch(*str++);
+}
+
+inline void uart2_hex(uint8_t hex)
 {
     hex &= 0xF;
     if (hex > 9)
-        buf_ch(hex + 'A' - 10);
+        uart2_ch(hex + 'A' - 10);
     else
-        buf_ch(hex + '0');
+        uart2_ch(hex + '0');
 }
 
-void buf_byte(uint8_t val)
+inline void uart2_byte(uint8_t val)
 {
-    buf_hex(val >> 4);
-    buf_hex(val);
+    uart2_hex(val >> 4);
+    uart2_hex(val);
 }
 
-void buf_word(uint16_t val)
+inline void uart2_word(uint16_t val)
 {
-    buf_byte(val >> 8);
-    buf_byte(val);
+    uart2_byte(val >> 8);
+    uart2_byte(val);
 }
 
-void buf_long(uint32_t val)
+inline void uart2_long(uint32_t val)
 {
-    buf_word(val >> 16);
-    buf_word(val);
+    uart2_word(val >> 16);
+    uart2_word(val);
 }
 
-void buf_str0(const char *str)
+/*void uart2_hex(uint8_t hex)
+{
+    hex &= 0xF;
+    if (hex > 9)
+        uart2_ch(hex + 'A' - 10);
+    else
+        uart2_ch(hex + '0');
+}
+
+void uart2_byte(uint8_t val)
+{
+    uart2_hex(val >> 4);
+    uart2_hex(val);
+}
+
+void uart2_word(uint16_t val)
+{
+    uart2_byte(val >> 8);
+    uart2_byte(val);
+}
+
+void uart2_long(uint32_t val)
+{
+    uart2_word(val >> 16);
+    uart2_word(val);
+}*/
+
+/*void uart2_str0(const char *str)
 {
     while (*str)
-        buf_ch(*str++);
-}
+        uart2_ch(*str++);
+}*/
 
 //static inline
 //void uart2_ch(char ch)
@@ -175,10 +218,10 @@ void usb_ep1_tx(void)
     volatile uint8_t *ep1fifo;
     ep1fifo = (uint8_t *)&USBFIFO1; // for now 8 bits at a time.
 
-    buf_str0("TX1\n");
-    buf_ch('[');
-    buf_word(ep1tbc);
-    buf_ch(']');
+    uart2_str0("TX1\n");
+    uart2_ch('[');
+    uart2_word(ep1tbc);
+    uart2_ch(']');
 
     if (!usb_conf)
         return;
@@ -189,15 +232,15 @@ void usb_ep1_tx(void)
     if (USBE1CSR0bits.TXPKTRDY)
         return;
 
-    buf_ch('|');
+    uart2_ch('|');
     for (int i = 0; i < MAXPKT; i++)
     {
-        buf_byte(*ep1ptr);
+        uart2_byte(*ep1ptr);
         *ep1fifo = *ep1ptr++; // Load data into FIFO
         if (!--ep1tbc)
             break;
     }
-    buf_ch('|');
+    uart2_ch('|');
 
     USBE1CSR0bits.TXPKTRDY = 1;
 }
@@ -206,16 +249,16 @@ void usb_ep2_rx()
 {
     ep2rbc = USBE2CSR2bits.RXCNT; // Endpoint 2 - Received Bytes Count
 
-    buf_ch('|');
+    uart2_ch('|');
     ptr = (uint8_t *)&USBFIFO2;
     for (int i = 0; i < ep2rbc; i++)
     {
         ep2data[i] = ptr[i & 3];
-        buf_byte(ep2data[i]);
+        uart2_byte(ep2data[i]);
     }
-    buf_ch('|');
+    uart2_ch('|');
 
-    buf_str0("RX2\n");
+    uart2_str0("RX2\n");
     USBE2CSR1bits.RXPKTRDY = 0; // Data has been unloaded
 }
 
@@ -224,10 +267,10 @@ void usb_ep3_tx(void)
     volatile uint8_t *ep3fifo;
     ep3fifo = (uint8_t *)&USBFIFO3; // for now 8 bits at a time.
 
-    buf_str0("TX3\n");
-    buf_ch('[');
-    buf_word(ep3tbc);
-    buf_ch(']');
+    uart2_str0("TX3\n");
+    uart2_ch('[');
+    uart2_word(ep3tbc);
+    uart2_ch(']');
 
     if (!usb_conf)
         return;
@@ -238,15 +281,15 @@ void usb_ep3_tx(void)
     if (USBE3CSR0bits.TXPKTRDY)
         return;
 
-    buf_ch('|');
+    uart2_ch('|');
     for (int i = 0; i < MAXPKT; i++)
     {
-        buf_byte(*ep3ptr);
+        uart2_byte(*ep3ptr);
         *ep3fifo = *ep3ptr++; // Load data into FIFO
         if (!--ep3tbc)
             break;
     }
-    buf_ch('|');
+    uart2_ch('|');
 
     USBE3CSR0bits.TXPKTRDY = 1;
 }
@@ -276,19 +319,19 @@ int usb_ep0_ctrl_read(void)
 {
     int ret = 0;
 
-    buf_str0("\nCR:");
-    buf_word(bmbRequest);
-    buf_ch(',');
-    buf_word(wValue);
-    buf_ch(',');
-    buf_word(wIndex);
-    buf_ch(',');
-    buf_word(wLength);
+    uart2_str0("\nCR:");
+    uart2_word(bmbRequest);
+    uart2_ch(',');
+    uart2_word(wValue);
+    uart2_ch(',');
+    uart2_word(wIndex);
+    uart2_ch(',');
+    uart2_word(wLength);
 
     switch (bmbRequest)
     {
     case 0x8006: // Get Descriptor(s)
-        buf_str0("[GET_DESC]");
+        uart2_str0("[GET_DESC]");
 
         switch (ep0data[3])
         {
@@ -296,21 +339,21 @@ int usb_ep0_ctrl_read(void)
             break;
 
         case 0x01: // Device Descriptor
-            buf_str0("[DEVICE]");
+            uart2_str0("[DEVICE]");
 
             USB_EP0_TXL(dev_desc, min(wLength, sizeof(dev_desc)));
             ret = 1;
             break;
 
         case 0x02: // Configuration Descriptor
-            buf_str0("[CONFIG]");
+            uart2_str0("[CONFIG]");
 
             USB_EP0_TXL(conf_desc, min(wLength, TOTAL_LEN));
             ret = 1;
             break;
 
         case 0x03: // String Descriptors
-            buf_str0("[STRING]");
+            uart2_str0("[STRING]");
 
             switch (ep0data[2])
             {
@@ -356,15 +399,16 @@ int usb_ep0_ctrl_read(void)
         break;
 
     default:
-        buf_str0("[UNKNOWN]");
+        uart2_str0("[UNKNOWN]");
         break;
     } // End of switch bmbRequest.
 
-    buf_ch(';');
-    buf_word(ep0tbc);
-    buf_ch('#');
-    buf_hex(ret);
-    buf_nl();
+    uart2_ch(';');
+    uart2_word(ep0tbc);
+    uart2_ch('#');
+    uart2_hex(ret);
+    uart2_ch('\r');
+    uart2_ch('\n');
 
     return ret;
 }
@@ -373,36 +417,37 @@ int usb_ep0_ctrl_write(void)
 {
     int ret = 0;
 
-    buf_str0("\nCW:");
-    buf_word(bmbRequest);
-    buf_ch(',');
-    buf_word(wValue);
-    buf_ch(',');
-    buf_word(wIndex);
-    buf_ch(',');
-    buf_word(wLength);
-    buf_ch(' ');
+    uart2_str0("\nCW:");
+    uart2_word(bmbRequest);
+    uart2_ch(',');
+    uart2_word(wValue);
+    uart2_ch(',');
+    uart2_word(wIndex);
+    uart2_ch(',');
+    uart2_word(wLength);
+    uart2_ch(' ');
 
     switch (bmbRequest)
     {
     case 0x0008: // Get Configuration
-        buf_str0("[GET_CONFIGURATION]");
+        uart2_str0("[GET_CONFIGURATION]");
         ret = 1;
         break;
 
     case 0x2120: // CDC Set Line Coding
-        buf_str0("[CDC_SET_LINE_CODING]");
+        uart2_str0("[CDC_SET_LINE_CODING]");
         ret = 1;
         break;
 
     default:
-        buf_str0("[UNKNOWN]");
+        uart2_str0("[UNKNOWN]");
         break;
     }
 
-    buf_ch('#');
-    buf_hex(ret);
-    buf_nl();
+    uart2_ch('#');
+    uart2_hex(ret);
+    uart2_ch('\r');
+    uart2_ch('\n');
 
     return ret;
 }
@@ -411,51 +456,52 @@ int usb_ep0_zero(void)
 {
     int ret = 0;
 
-    buf_str0("\nCZ:");
-    buf_word(bmbRequest);
-    buf_ch(',');
-    buf_word(wValue);
-    buf_ch(',');
-    buf_word(wIndex);
-    buf_ch(' ');
+    uart2_str0("\nCZ:");
+    uart2_word(bmbRequest);
+    uart2_ch(',');
+    uart2_word(wValue);
+    uart2_ch(',');
+    uart2_word(wIndex);
+    uart2_ch(' ');
 
     switch (bmbRequest)
     {
     case 0x0001: // Clear Feature
-        buf_str0("[CLEAR_FEATURE]");
+        uart2_str0("[CLEAR_FEATURE]");
         ret = 1;
         break;
 
     case 0x0003: // Set Feature
-        buf_str0("[SET_FEATURE]");
+        uart2_str0("[SET_FEATURE]");
         ret = 1;
         break;
 
     case 0x0005: // Save Address
-        buf_str0("[SAVE_ADDRESS]");
+        uart2_str0("[SAVE_ADDRESS]");
         dev_addr = wValue & 0xFF;
         ret = 1;
         break;
 
     case 0x0009: // Set Configuration
-        buf_str0("[SET_CONFIGURATION]");
+        uart2_str0("[SET_CONFIGURATION]");
         usb_conf = wValue & 0xFF;
         ret = 1;
         break;
 
     case 0x2122: // CDC Set Control Line State
-        buf_str0("[CDC_SET_CONTROL_LINE_STATE]");
+        uart2_str0("[CDC_SET_CONTROL_LINE_STATE]");
         ret = 1;
         break;
 
     default:
-        buf_str0("[UNKNOWN]");
+        uart2_str0("[UNKNOWN]");
         break;
     }
 
-    buf_ch('#');
-    buf_hex(ret);
-    buf_nl();
+    uart2_ch('#');
+    uart2_hex(ret);
+    uart2_ch('\r');
+    uart2_ch('\n');
 
     return ret;
 }
@@ -464,11 +510,11 @@ int usb_ep0_zero(void)
     do                        \
     {                         \
         int next = (s);       \
-        buf_ch('{');          \
-        buf_str0(sstr[ep0s]); \
-        buf_str0("->");       \
-        buf_str0(sstr[next]); \
-        buf_ch('}');          \
+        uart2_ch('{');          \
+        uart2_str0(sstr[ep0s]); \
+        uart2_str0("->");       \
+        uart2_str0(sstr[next]); \
+        uart2_ch('}');          \
         ep0s = next;          \
     } while (0)
 
@@ -477,29 +523,29 @@ int usb_ep0_tx(void)
     volatile uint8_t *ep0fifo;
     ep0fifo = (uint8_t *)&USBFIFO0; // for now 8 bits at a time.
 
-    buf_ch('[');
-    buf_word(ep0tbc);
-    buf_ch(']');
+    uart2_ch('[');
+    uart2_word(ep0tbc);
+    uart2_ch(']');
 
-    // buf_ch('|');
+    // uart2_ch('|');
     for (int i = 0; i < MAXPKT; i++)
     {
-        // buf_byte(*ep0ptr);
+        // uart2_byte(*ep0ptr);
         *ep0fifo = *ep0ptr++; // Load data into FIFO
         if (!--ep0tbc)
             break;
     }
-    // buf_ch('|');
+    // uart2_ch('|');
 
     if (ep0tbc)
     { // more to come
-        buf_ch('+');
+        uart2_ch('+');
         USBE0CSR0bits.TXRDY = 1;
         return S_TXPKT;
     }
     else
     { // last packet
-        buf_ch('/');
+        uart2_ch('/');
         USBE0CSR0 |= _USBE0CSR0_TXRDY_MASK | _USBE0CSR0_DATAEND_MASK;
 
         // USBE0CSR0bits.TXRDY = 1;
@@ -512,9 +558,10 @@ void usb_ep0_addr(void)
 {
     if (dev_addr && !USBCSR0bits.FUNC)
     {
-        buf_str0("ADDR=");
-        buf_word(dev_addr);
-        buf_nl();
+        uart2_str0("ADDR=");
+        uart2_word(dev_addr);
+        uart2_ch('\r');
+        uart2_ch('\n');
 
         USBCSR0bits.FUNC = dev_addr & 0x7F;
     }
@@ -522,21 +569,21 @@ void usb_ep0_addr(void)
 
 void usb_ep0_stall(void)
 {
-    buf_str0("STALL");
+    uart2_str0("STALL");
     USBE0CSR0bits.STALL = 1;
 }
 
 void usb_ep0_flush(void)
 {
-    buf_str0("FLUSH");
+    uart2_str0("FLUSH");
     USBE0CSR0bits.FLUSH = 1;
 }
 
 void usb_ep0(void)
 {
-    buf_ch('(');
-    buf_word(USBE0CSR0 >> 16);
-    buf_ch(')');
+    uart2_ch('(');
+    uart2_word(USBE0CSR0 >> 16);
+    uart2_ch(')');
 
     if (ep0s == S_RESET)
         EP0_STATE(S_IDLE);
@@ -544,14 +591,14 @@ void usb_ep0(void)
     if (USBE0CSR0bits.SETEND)
     {
         USBE0CSR0bits.SETENDC = 1;
-        buf_str0("SETEND-");
+        uart2_str0("SETEND-");
         if (ep0s != S_ZERO)
             EP0_STATE(S_IDLE);
     }
 
     if (USBE0CSR0bits.STALLED)
     {
-        buf_str0("STALLED");
+        uart2_str0("STALLED");
         USBE0CSR0bits.STALLED = 0;
         return;
     }
@@ -571,7 +618,7 @@ void usb_ep0(void)
 
     if (!USBE0CSR0bits.RXRDY)
     {
-        buf_ch('!');
+        uart2_ch('!');
         return;
     }
 
@@ -584,14 +631,14 @@ void usb_ep0(void)
         return;
     }
 
-    buf_ch('|');
+    uart2_ch('|');
     ptr = (uint8_t *)&USBFIFO0;
     for (int i = 0; i < ep0rbc; i++)
     {
         ep0data[i] = ptr[i & 3];
-        buf_byte(ep0data[i]);
+        uart2_byte(ep0data[i]);
     }
-    buf_ch('|');
+    uart2_ch('|');
 
     switch (ep0s)
     {
@@ -719,7 +766,7 @@ void usb_reset_ep3(void)
 
 void usb_reset(void)
 {
-    buf_str0("RESET");
+    uart2_str0("RESET");
 
     dev_addr = 0;
     usb_conf = 0;
@@ -740,13 +787,13 @@ extern "C" void __ISR(_USB_VECTOR, IPL7SRS) USB_ISR(void)
     uint32_t csr2 = USBCSR2;
     // IFS4CLR = _IFS4_USBIF_MASK;		// Reset the USB Interrupt flag
 
-    buf_ch('<');
-    buf_word(csr0 >> 8);
-    buf_ch(':');
-    buf_byte(csr1);
-    buf_ch(':');
-    buf_byte(csr2 >> 16);
-    buf_ch('.');
+    uart2_ch('<');
+    uart2_word(csr0 >> 8);
+    uart2_ch(':');
+    uart2_byte(csr1);
+    uart2_ch(':');
+    uart2_byte(csr2 >> 16);
+    uart2_ch('.');
 
     /* Endpoint 0 Interrupt Handler */
     if (csr0 & _USBCSR0_EP0IF_MASK)
@@ -764,9 +811,9 @@ extern "C" void __ISR(_USB_VECTOR, IPL7SRS) USB_ISR(void)
     if (csr1 & _USBCSR1_EP2RXIF_MASK)
     { // Endpoint 2 Receive
         usb_ep2_rx();
-        buf_ch('*');
-        buf_word(ep2rbc);
-        buf_ch('*');
+        uart2_ch('*');
+        uart2_word(ep2rbc);
+        uart2_ch('*');
         /* for (int i=0; i<ep2rbc; i++)
             loop_ch(ep2data[i]); */
         loop_ch(ep2data[0]);
@@ -783,8 +830,9 @@ extern "C" void __ISR(_USB_VECTOR, IPL7SRS) USB_ISR(void)
         usb_reset();
     }
 
-    buf_ch('>');
-    buf_nl();
+    uart2_ch('>');
+    uart2_ch('\r');
+    uart2_ch('\n');
 
     IFS4CLR = _IFS4_USBIF_MASK; // Reset the USB Interrupt flag
 }
