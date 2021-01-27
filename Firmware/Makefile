@@ -18,7 +18,7 @@ SOURCE_FILES=Main.cpp Bootloader/Periphery/UART/UART.cpp Bootloader/Periphery/US
 #$(wildcard *.cpp) $(wildcard **/*.cpp) $(wildcard UI/**/*.cpp) $(wildcard ../Bootloader/Periphery/**/*.cpp)
 OBJ_FILES=${SOURCE_FILES:%.cpp=${BUILD_DIR}/%.o}
 
-OPTS=-c -G0 -mprocessor=${DEVICE} -mconfig-data-dir=${XC32_PATH}/pic32mx/lib/proc/${DEVICE} -iprefix ${XC32_PATH}/lib/gcc/pic32mx/4.8.3/ -Wall -MMD -MF ${BUILD_DIR}/.depend
+OPTS=-c -fstack-usage -Wstack-usage=96 -fdump-tree-optimized -fno-rtti -mprocessor=${DEVICE} -mconfig-data-dir=${XC32_PATH}/pic32mx/lib/proc/${DEVICE} -iprefix ${XC32_PATH}/lib/gcc/pic32mx/4.8.3/ -Wall -MMD
 LD_OPTS= -Wl,--defsym=_min_heap_size=128,--trace,--script="${LINKER_SCRIPT}",--cref,-Map="${BUILD_DIR}/${NAME}.map",--report-mem,--warn-section-align,--memorysummary=${BUILD_DIR}/memoryfile.xml
 
 all: ${BUILD_DIR}/${NAME}.elf
