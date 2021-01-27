@@ -214,3 +214,5 @@ pip-log.txt
 #Mr Developer
 .mr.developer.cfg
 /AXIOM Remote Prototype V01/nbproject/private/
+
+Firmware/Bootloader/

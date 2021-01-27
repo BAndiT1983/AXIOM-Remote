@@ -1,2 +1,3 @@
-[submodule "3rdParty/imgui"]
+[submodule "AXIOM_Remote_Firmware_Visualizer/3rdParty/imgui"]
+	path = AXIOM_Remote_Firmware_Visualizer/3rdParty/imgui
 	url = https://github.com/ocornut/imgui.git

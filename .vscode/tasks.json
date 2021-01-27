@@ -1,0 +1,61 @@
+{
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "clang++ build active file",
+      "command": "/usr/bin/clang++",
+      "args": [
+        "-g",
+        "${file}",
+        "-o",
+        "${fileDirname}/${fileBasenameNoExtension}"
+      ],
+      "options": {
+        "cwd": "/usr/bin"
+      }
+    },
+    {
+      "type": "shell",
+      "group": "build",
+      "label": "Build firmware",
+      "command": "make clean && make -j8",
+      "options": {
+        "cwd": "${workspaceFolder}/Firmware"
+      }
+    },
+    {
+      "type": "shell",
+      "group": "build",
+      "label": "Flash firmware",
+      "command": "pic32prog build/AXIOM_Remote_Firmware.hex -S",
+      "options": {
+        "cwd": "${workspaceFolder}/Firmware"
+      }
+    },
+    {
+      "type": "shell",
+      "group": "build",
+      "label": "Build and flash firmware",
+      "command": "pic32prog build/AXIOM_Remote_Firmware.hex -S",
+      "dependsOn": [
+        "Build firmware",
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/Firmware"
+      }
+    },
+    {
+      "type": "shell",
+      "group": "build",
+      "label": "Build visualiser",
+      "command": "make -j8",
+      "options": {
+        "cwd": "${workspaceFolder}/AXIOM_Remote_Firmware_Visualizer/build"
+      },
+      "presentation": {
+        "clear": true
+      }
+    },
+  ],
+  "version": "2.0.0"
+}
